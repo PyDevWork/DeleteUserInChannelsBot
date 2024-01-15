@@ -1,6 +1,5 @@
 from typing import Optional
 from aiogram import Dispatcher
-from aiogram.fsm.storage.base import BaseStorage
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from src.bot.common.middlewares.add_user import AddUserMiddleware
@@ -25,9 +24,11 @@ def register_middlewares(dp: Dispatcher, engine: Optional[AsyncEngine] = None) -
 
     dp.message.outer_middleware.register(db_middleware)
     dp.callback_query.outer_middleware.register(db_middleware)
+    dp.my_chat_member.outer_middleware.register(db_middleware)
 
     dp.message.middleware.register(add_user_middleware)
     dp.callback_query.middleware.register(add_user_middleware)
+    dp.my_chat_member.middleware.register(add_user_middleware)
 
     dp.message.middleware.register(ban_middleware)
     dp.callback_query.middleware.register(ban_middleware)

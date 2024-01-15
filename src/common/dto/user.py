@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from src.common.dto.question import QuestionDTO
+    from src.common.dto.chat import ChatDTO
 
 
 class UserCreate(BaseModel):
@@ -38,6 +39,7 @@ class UserDTO(BaseModel):
     admin: bool
 
     questions: List['QuestionDTO']
+    chats: List['ChatDTO']
 
     created_at: datetime
     updated_at: datetime

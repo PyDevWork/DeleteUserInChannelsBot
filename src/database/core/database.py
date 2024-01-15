@@ -11,6 +11,7 @@ from src.database.repositories import (
     UserRepository,
     QuestionRepository,
     ComSubChatsRepository,
+    ChatRepository,
 )
 
 
@@ -43,3 +44,7 @@ class Database:
     @property
     def com_sub_chats(self) -> ComSubChatsRepository:
         return cast(ComSubChatsRepository, self._mediator.comsubchatsrepository)
+    
+    @property
+    def chat(self) -> ChatRepository:
+        return cast(ChatRepository, self._mediator.chatrepository)

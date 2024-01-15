@@ -11,6 +11,7 @@ from src.database.models.base import ModelWithTime, Base
 
 if TYPE_CHECKING:
     from src.database.models.question import Question
+    from src.database.models.chat import Chat
 
 
 class User(Base, ModelWithTime):
@@ -27,7 +28,7 @@ class User(Base, ModelWithTime):
     blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    questions: Mapped[List['Question']] = relationship(
-        'Question',
-        back_populates='user'
+    questions: Mapped[List["Question"]] = relationship(
+        "Question", back_populates="user"
     )
+    chats: Mapped[List["Chat"]] = relationship("Chat", back_populates="user")

@@ -11,6 +11,8 @@ from src.bot.common.middlewares.i18n import gettext as _
 
 def start():
     result = InlineKeyboardBuilder()
+    result.row(InlineKeyboardButton(text=f"🚫 {_(texts.KICK_USER)}", callback_data=Cd.Start.kick()))
+    result.row(InlineKeyboardButton(text=f"🔍 {_(texts.CHANNEL_LIST)}", callback_data=Cd.Start.channel_list()))
     return result.as_markup()
 
 

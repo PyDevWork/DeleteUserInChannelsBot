@@ -3,7 +3,8 @@ from src.bot.utils.callback.models import MetaInner, _Inner, CallbackExtract
 
 class CallbackData:
     class Start(metaclass=MetaInner):
-        ...
+        kick = _Inner()
+        channel_list = _Inner()
 
     class Admin(metaclass=MetaInner):
         ross = _Inner()

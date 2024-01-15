@@ -2,10 +2,12 @@ from src.database.models.base import Base
 from src.database.models.user import User
 from src.database.models.question import Question
 from src.database.models.settings import ComSubChats
+from src.database.models.chat import Chat
 
 __all__ = (
     'Base',
     'User',
     'Question',
     'ComSubChats',
+    'Chat'
 )
