@@ -60,15 +60,15 @@ async def get_support_message(
 @client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Start())
 async def back(callback: types.CallbackQuery, state: FSMContext, db: Database):
     data = Cb.extract(callback.data)
-    if data.data == Cb.Start.kick():
-        await callback.message.delete()
-        reply_markup = keyboards.back(to=Cb.Back.main_menu(), cancel=True)
-        await callback.message.answer(
-            _(texts.SEND_USER_ID_FOR_KICK), reply_markup=reply_markup
-        )
-        await state.set_state(KickUser.user_id)
+    # if data.data == Cb.Start.kick():
+    #     await callback.message.delete()
+    #     reply_markup = keyboards.back(to=Cb.Back.main_menu(), cancel=True)
+    #     await callback.message.answer(
+    #         _(texts.SEND_USER_ID_FOR_KICK), reply_markup=reply_markup
+    #     )
+    #     await state.set_state(KickUser.user_id)
 
-    elif data.data == Cb.Start.channel_list():
+    if data.data == Cb.Start.channel_list():
         all_chats = await db.chat.select_many()
         chats_admin = [
             i for i in all_chats if i.permissions["status"] == "administrator"
@@ -79,22 +79,30 @@ async def back(callback: types.CallbackQuery, state: FSMContext, db: Database):
         for i in chats_admin:
             text += f"{i.title} | {i.chat_id}\n"
 
-        if text == '':
-            text = 'Пусто'
+        if text == "":
+            text = "Пусто"
 
         await callback.message.reply(text)
 
 
-@client_router.message(F.text, KickUser.user_id)
+@client_router.message(Command("kick"))
 async def get_user_id_kick(
     message: types.Message, bot: MyBot, state: FSMContext, db: Database
 ):
     try:
-        user_id = int(message.text)
+        user_id = int(message.text.split(" ")[1])
     except ValueError:
-        reply_markup = keyboards.back(to=Cb.Back.main_menu(), cancel=True)
+        reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
         await message.reply(
             _(texts.KICK_USER_ID_MUST_BE_INTEGER), reply_markup=reply_markup
+        )
+        return
+
+    except IndexError:
+        reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+        await message.reply(
+            "После комманды вы должны указать ID пользователя",
+            reply_markup=reply_markup,
         )
         return
 
@@ -106,13 +114,16 @@ async def get_user_id_kick(
         text=_(texts.KICK_PROCESS_STARTED).format(len(chats_admin)),
         reply_markup=reply_markup,
     )
-    await state.clear()
 
     success = []
     errors = []
 
     for i in chats_admin:
         try:
+            res = await bot.get_chat_member(chat_id=i.chat_id, user_id=user_id)
+            if res.status.name == 'LEFT':
+                errors.append((i.title, i.chat_id))
+                continue
             await bot.ban_chat_member(chat_id=i.chat_id, user_id=user_id)
             await bot.unban_chat_member(
                 chat_id=i.chat_id, user_id=user_id, only_if_banned=True
