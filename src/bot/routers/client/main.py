@@ -168,11 +168,11 @@ async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
         try:
             res = await bot.get_chat_member(chat_id=i.chat_id, user_id=user_id)
             if res.status.name != "LEFT":
-                text += f"✅ | {res.status.name} - {i[0]} | {i[1]}\n"
+                text += f"✅ | {res.status.name} - {i.title} | {i.chat_id}\n"
                 continue
-            text += f"🚫 | {res.status.name} - {i[0]} | {i[1]}\n"
+            text += f"🚫 | {res.status.name} - {i.title} | {i.chat_id}\n"
         except TelegramBadRequest:
-            text += f"🚫 - {i[0]} | {i[1]}\n"
+            text += f"🚫 - {i.title} | {i.chat_id}\n"
 
     await mes.answer(
         text=_(texts.USER_PROCESS_FINISH).format(text), reply_markup=reply_markup
