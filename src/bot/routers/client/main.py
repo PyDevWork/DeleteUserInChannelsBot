@@ -1,21 +1,20 @@
 import random
 
-from aiogram import F, types
-from aiogram.filters import CommandStart, Command
-from aiogram.fsm.context import FSMContext
+from aiogram import types
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
 
 from src.bot import keyboards
-from src.bot.core.models import MyBot
-from src.config.settings import Settings
-from src.bot.utils.texts import client as texts
-from src.database.core import Database
-from src.common.dto import QuestionCreate
-from src.bot.common.states.main import Support, KickUser
-
-from src.bot.utils.callback import CallbackData as Cb
-from src.bot.routers.client.router import client_router
 from src.bot.common.middlewares.i18n import gettext as _
+from src.bot.common.states.main import Support
+from src.bot.core.models import MyBot
+from src.bot.routers.client.router import client_router
+from src.bot.utils.callback import CallbackData as Cb
+from src.bot.utils.texts import client as texts
+from src.common.dto import QuestionCreate
+from src.config.settings import Settings
+from src.database.core import Database
 
 
 @client_router.message(CommandStart())
@@ -58,15 +57,8 @@ async def get_support_message(
 
 
 @client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Start())
-async def back(callback: types.CallbackQuery, state: FSMContext, db: Database):
+async def start_cq(callback: types.CallbackQuery, db: Database):
     data = Cb.extract(callback.data)
-    # if data.data == Cb.Start.kick():
-    #     await callback.message.delete()
-    #     reply_markup = keyboards.back(to=Cb.Back.main_menu(), cancel=True)
-    #     await callback.message.answer(
-    #         _(texts.SEND_USER_ID_FOR_KICK), reply_markup=reply_markup
-    #     )
-    #     await state.set_state(KickUser.user_id)
 
     if data.data == Cb.Start.channel_list():
         all_chats = await db.chat.select_many()
@@ -86,9 +78,7 @@ async def back(callback: types.CallbackQuery, state: FSMContext, db: Database):
 
 
 @client_router.message(Command("kick"))
-async def get_user_id_kick(
-    message: types.Message, bot: MyBot, state: FSMContext, db: Database
-):
+async def get_user_id_kick(message: types.Message, bot: MyBot, db: Database):
     try:
         user_id = int(message.text.split(" ")[1])
     except ValueError:
@@ -121,7 +111,7 @@ async def get_user_id_kick(
     for i in chats_admin:
         try:
             res = await bot.get_chat_member(chat_id=i.chat_id, user_id=user_id)
-            if res.status.name == 'LEFT':
+            if res.status.name == "LEFT":
                 errors.append((i.title, i.chat_id))
                 continue
             await bot.ban_chat_member(chat_id=i.chat_id, user_id=user_id)
@@ -141,6 +131,51 @@ async def get_user_id_kick(
 
     await mes.answer(
         text=_(texts.KICK_PROCESS_FINISH).format(text), reply_markup=reply_markup
+    )
+
+
+@client_router.message(Command("user"))
+async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
+    try:
+        user_id = int(message.text.split(" ")[1])
+    except ValueError:
+        reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+        await message.reply(
+            _(texts.USER_USER_ID_MUST_BE_INTEGER), reply_markup=reply_markup
+        )
+        return
+
+    except IndexError:
+        reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+        await message.reply(
+            "После комманды вы должны указать ID пользователя",
+            reply_markup=reply_markup,
+        )
+        return
+
+    all_chats = await db.chat.select_many()
+    chats_admin = [i for i in all_chats if i.permissions["status"] == "administrator"]
+
+    reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+    mes = await message.answer(
+        text=_(texts.KICK_PROCESS_STARTED).format(len(chats_admin)),
+        reply_markup=reply_markup,
+    )
+
+    text = ""
+
+    for i in chats_admin:
+        try:
+            res = await bot.get_chat_member(chat_id=i.chat_id, user_id=user_id)
+            if res.status.name != "LEFT":
+                text += f"✅ | {res.status.name} - {i[0]} | {i[1]}\n"
+                continue
+            text += f"🚫 | {res.status.name} - {i[0]} | {i[1]}\n"
+        except TelegramBadRequest:
+            text += f"🚫 - {i[0]} | {i[1]}\n"
+
+    await mes.answer(
+        text=_(texts.USER_PROCESS_FINISH).format(text), reply_markup=reply_markup
     )
 
 
