@@ -11,7 +11,9 @@ async def set_bot_commands(bot: Bot):
     commands = [
         types.BotCommand(command='/start', description='Bot start menu. Clears all the states'),
         types.BotCommand(command='/kick', description='Kick users'),
-        types.BotCommand(command='/support', description='Bot tech support. ')
+        types.BotCommand(command='/user', description='Check users in channel. '),
+        types.BotCommand(command='/chat_links', description='Get links in channels for 1 day. ')
+
     ]
     await bot.set_my_commands(commands)
 

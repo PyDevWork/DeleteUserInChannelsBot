@@ -1,3 +1,4 @@
+import datetime
 import random
 
 from aiogram import types
@@ -181,6 +182,47 @@ async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
 
     await mes.answer(
         text=_(texts.USER_PROCESS_FINISH).format(text), reply_markup=reply_markup
+    )
+
+
+@client_router.message(Command("chat_links"))
+async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Database):
+    try:
+        expired_data = int(message.text.split(" ")[1])
+    except ValueError:
+        reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+        await message.reply(
+            "Ошибка, дни должны быть указаны как число", reply_markup=reply_markup
+        )
+        return
+
+    except IndexError:
+        reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+        await message.reply(
+            "После комманды вы должны количетсво часов действия ссылок",
+            reply_markup=reply_markup,
+        )
+        return
+
+    all_chats = await db.chat.select_many()
+    chats_admin = [i for i in all_chats if i.permissions["status"] == "administrator"]
+
+    text = ""
+
+    for i in chats_admin:
+        try:
+            res = await bot.create_chat_invite_link(
+                chat_id=i.chat_id,
+                expire_date=datetime.timedelta(hours=expired_data),
+                member_limit=1,
+            )
+            text += f"{i.title} | {i.chat_id} -> {res.invite_link}\n"
+        except TelegramBadRequest:
+            text += f"🚫 - {i.title} | {i.chat_id}\n"
+
+    reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+    await message.answer(
+        text=_(texts.CHAT_LINK_PROCESS_FINISH).format(text), reply_markup=reply_markup
     )
 
 
