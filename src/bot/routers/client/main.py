@@ -17,6 +17,19 @@ from src.common.dto import QuestionCreate
 from src.config.settings import Settings
 from src.database.core import Database
 
+MAX_MESSAGE_LENGTH = 4096  # Лимит Telegram
+
+
+def split_message(text: str):
+    """
+    Разбивает текст на части, не превышающие 4096 символов.
+    """
+    parts = [
+        text[i : i + MAX_MESSAGE_LENGTH]
+        for i in range(0, len(text), MAX_MESSAGE_LENGTH)
+    ]
+    return parts
+
 
 @client_router.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
@@ -130,9 +143,12 @@ async def get_user_id_kick(message: types.Message, bot: MyBot, db: Database):
     for i in errors:
         text += f"🚫 - {i[0]} | {i[1]}\n"
 
-    await mes.answer(
-        text=_(texts.KICK_PROCESS_FINISH).format(text), reply_markup=reply_markup
-    )
+    txt = _(texts.KICK_PROCESS_FINISH).format(text)
+
+    for i in split_message(txt):
+        await mes.answer(
+            text=i, reply_markup=reply_markup
+        )
 
 
 @client_router.message(Command("user"))
@@ -180,9 +196,12 @@ async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
         except TelegramBadRequest:
             text += f"🚫 - {i.title} | {i.chat_id}\n"
 
-    await mes.answer(
-        text=_(texts.USER_PROCESS_FINISH).format(text), reply_markup=reply_markup
-    )
+    txt = _(texts.USER_PROCESS_FINISH).format(text)
+    for i in split_message(txt):
+        await mes.answer(
+            text=i, reply_markup=reply_markup
+        )
+
 
 
 @client_router.message(Command("chat_links"))
@@ -221,9 +240,12 @@ async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Da
             text += f"🚫 - {i.title} | {i.chat_id}\n"
 
     reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
-    await message.answer(
-        text=_(texts.CHAT_LINK_PROCESS_FINISH).format(text), reply_markup=reply_markup
-    )
+
+    txt = _(texts.CHAT_LINK_PROCESS_FINISH).format(text)
+    for i in split_message(txt):
+        await message.answer(
+            text=i, reply_markup=reply_markup
+        )
 
 
 @client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Back())
