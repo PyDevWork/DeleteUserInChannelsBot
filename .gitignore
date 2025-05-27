@@ -228,4 +228,3 @@ test.py
 
 *.db
 
-migrations/versions/*.py
