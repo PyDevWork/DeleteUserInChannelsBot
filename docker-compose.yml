@@ -1,45 +1,26 @@
-version: "3"
-
 services:
   app:
-    build:
-      context: .
-      dockerfile: src/Dockerfile
-    restart: always
-    networks:
-      - app-network
-    ports:
-      - '8080:8000'
+    build: .
+    restart: on-failure:3
+    network_mode: bridge
+    image: delete-user-in-channels-bot
     volumes:
-      - ./:/usr/src/project/
-    working_dir: /usr/src/project/
-    command: python -m src.bot
+      - ./${DATABASE_NAME}:/app/${DATABASE_NAME}
+    working_dir: /app
 
-  postgres:
-    image: postgres:latest
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    environment:
-      POSTGRES_DB: ${DATABASE_NAME}
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASS}
-    networks:
-      - app-network
+  database_migration_file:
+    profiles: [ "migration" ]
+
+    build: .
+
+    image: delete-user-in-channels-bot
+
+    network_mode: bridge
+
     env_file:
-      - ./.env
-    ports:
-      - '5432'
+      - ${ENV_FILE}
 
-  redis:
-    image: redis:latest
-    restart: always
-    networks:
-      - app-network
+    volumes:
+      - ./:/app/
 
-
-volumes:
-  postgres_data:
-
-networks:
-  app-network:
+    command: ["alembic", "upgrade", "head"]
