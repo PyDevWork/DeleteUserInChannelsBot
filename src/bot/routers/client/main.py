@@ -93,7 +93,6 @@ async def start_cq(callback: types.CallbackQuery, db: Database):
             await callback.message.reply(i)
 
 
-
 @client_router.message(Command("kick"))
 async def get_user_id_kick(message: types.Message, bot: MyBot, db: Database):
     try:
@@ -253,18 +252,19 @@ async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Da
 @client_router.message(Command("renew"))
 async def renew(message: types.Message, bot: MyBot, db: Database):
     all_chats = await db.chat.select_many()
+    chats_admin = [i for i in all_chats if i.permissions["status"] == "administrator"]
 
     reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
 
     mes = await message.answer(
-        text=_(texts.RENEW_PROCESS_STARTED).format(len(all_chats)),
+        text=_(texts.RENEW_PROCESS_STARTED).format(len(chats_admin)),
         reply_markup=reply_markup,
     )
     success = []
     errors = []
     not_edited = []
 
-    for i in all_chats:
+    for i in chats_admin:
         try:
             res = await bot.get_chat(chat_id=i.chat_id)
             if res.title == i.title:
@@ -292,6 +292,17 @@ async def renew(message: types.Message, bot: MyBot, db: Database):
 
     for i in split_message(txt):
         await mes.answer(text=i, reply_markup=reply_markup)
+
+    chats_member = ""
+    for i in chats_admin:
+        try:
+            res = await bot.get_chat_member_count(chat_id=i.chat_id)
+            chats_member += f"{i.title}: {res}"
+        except TelegramBadRequest:
+            ...
+
+    with open("log.txt", "w") as f:
+        f.write(chats_member)
 
 
 @client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Back())
