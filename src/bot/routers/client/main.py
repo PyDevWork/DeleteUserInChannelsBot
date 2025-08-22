@@ -309,16 +309,16 @@ async def renew(message: types.Message, bot: MyBot, db: Database):
     for i in split_message(txt):
         await mes.answer(text=i, reply_markup=reply_markup)
 
-    chats_member = ""
-    for i in chats_admin:
-        try:
-            res = await get_chat_member_count(bot, chat_id=i.chat_id)
-            chats_member += f"{i.title}: {res}"
-        except TelegramBadRequest:
-            ...
+    # chats_member = ""
+    # for i in chats_admin:
+    #     try:
+    #         res = await get_chat_member_count(bot, chat_id=i.chat_id)
+    #         chats_member += f"{i.title}: {res}"
+    #     except TelegramBadRequest:
+    #         ...
 
-    with open("log.txt", "w") as f:
-        f.write(chats_member)
+    # with open("log.txt", "w") as f:
+    #     f.write(chats_member)
 
 
 @client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Back())
