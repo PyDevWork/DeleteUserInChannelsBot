@@ -14,6 +14,7 @@ from src.bot.routers.client.router import client_router
 from src.bot.utils.callback import CallbackData as Cb
 from src.bot.utils.texts import client as texts
 from src.common.dto import QuestionCreate
+from src.common.dto.chat import ChatUpdate
 from src.config.settings import Settings
 from src.database.core import Database
 
@@ -203,7 +204,6 @@ async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
         )
 
 
-
 @client_router.message(Command("chat_links"))
 async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Database):
     try:
@@ -246,6 +246,50 @@ async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Da
         await message.answer(
             text=i, reply_markup=reply_markup
         )
+
+
+@client_router.message(Command("renew"))
+async def renew(message: types.Message, bot: MyBot, db: Database):
+    all_chats = await db.chat.select_many()
+
+    reply_markup = keyboards.back(to=Cb.Back.main_menu(), main_menu=True)
+
+    mes = await message.answer(
+        text=_(texts.RENEW_PROCESS_STARTED).format(len(all_chats)),
+        reply_markup=reply_markup,
+    )
+    success = []
+    errors = []
+    not_edited = []
+
+    for i in all_chats:
+        try:
+            res = await bot.get_chat(chat_id=i.chat_id)
+            if res.title == i.title:
+                not_edited.append((i.title, i.chat_id))
+                continue
+            else:
+                await db.chat.update(
+                    chat_id=i.chat_id,
+                    query=ChatUpdate(title=res.title),
+                )
+                success.append((i.title, i.chat_id, res.title))
+        except TelegramBadRequest:
+            errors.append((i.title, i.chat_id))
+
+    text = ""
+
+    for i in success:
+        text += f"✅ - {i[0]} -> {i[2]} | {i[1]}\n"
+    for i in not_edited:
+        text += f"🗿 - {i[0]} | {i[1]}\n"
+    for i in errors:
+        text += f"🚫 - {i[0]} | {i[1]}\n"
+
+    txt = _(texts.RENEW_PROCESS_FINISH).format(text)
+
+    for i in split_message(txt):
+        await mes.answer(text=i, reply_markup=reply_markup)
 
 
 @client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Back())
