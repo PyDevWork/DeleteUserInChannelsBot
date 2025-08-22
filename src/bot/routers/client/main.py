@@ -89,7 +89,9 @@ async def start_cq(callback: types.CallbackQuery, db: Database):
         if text == "":
             text = "Пусто"
 
-        await callback.message.reply(text)
+        for i in split_message(text):
+            await callback.message.reply(i)
+
 
 
 @client_router.message(Command("kick"))
