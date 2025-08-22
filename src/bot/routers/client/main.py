@@ -17,7 +17,8 @@ from src.common.dto import QuestionCreate
 from src.common.dto.chat import ChatUpdate
 from src.config.settings import Settings
 from src.database.core import Database
-
+from aiogram.exceptions import TelegramRetryAfter
+import asyncio
 MAX_MESSAGE_LENGTH = 4096  # Лимит Telegram
 
 
@@ -248,6 +249,13 @@ async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Da
             text=i, reply_markup=reply_markup
         )
 
+async def get_chat(bot, chat_id):
+    try:
+        return await bot.get_chat(chat_id=chat_id)
+    except TelegramRetryAfter as e:
+        print(f"Превышен лимит. Ждём {e.timeout} секунд")
+        await asyncio.sleep(e.timeout + 1)
+        return await bot.get_chat(chat_id=chat_id)
 
 @client_router.message(Command("renew"))
 async def renew(message: types.Message, bot: MyBot, db: Database):
@@ -266,7 +274,7 @@ async def renew(message: types.Message, bot: MyBot, db: Database):
 
     for i in chats_admin:
         try:
-            res = await bot.get_chat(chat_id=i.chat_id)
+            res = await get_chat(bot, chat_id=i.chat_id)
             if res.title == i.title:
                 not_edited.append((i.title, i.chat_id))
                 continue
