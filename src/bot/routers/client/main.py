@@ -254,14 +254,14 @@ async def get_chat(bot, chat_id):
         return await bot.get_chat(chat_id=chat_id)
     except TelegramRetryAfter as e:
         print(f"Превышен лимит. Ждём {e.timeout} секунд")
-        await asyncio.sleep(e.timeout + 1)
+        await asyncio.sleep(e.retry_after + 1)
         return await bot.get_chat(chat_id=chat_id)
 
 async def get_chat_member_count(bot, chat_id):
     try:
         return await bot.get_chat_member_count(chat_id=chat_id)
     except TelegramRetryAfter as e:
-        print(f"Превышен лимит. Ждём {e.timeout} секунд")
+        print(f"Превышен лимит. Ждём {e.retry_after} секунд")
         await asyncio.sleep(e.timeout + 1)
         return await bot.get_chat_member_count(chat_id=chat_id)
 
