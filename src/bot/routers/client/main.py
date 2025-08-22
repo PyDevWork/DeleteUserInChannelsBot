@@ -257,6 +257,14 @@ async def get_chat(bot, chat_id):
         await asyncio.sleep(e.timeout + 1)
         return await bot.get_chat(chat_id=chat_id)
 
+async def get_chat_member_count(bot, chat_id):
+    try:
+        return await bot.get_chat_member_count(chat_id=chat_id)
+    except TelegramRetryAfter as e:
+        print(f"Превышен лимит. Ждём {e.timeout} секунд")
+        await asyncio.sleep(e.timeout + 1)
+        return await bot.get_chat_member_count(chat_id=chat_id)
+
 @client_router.message(Command("renew"))
 async def renew(message: types.Message, bot: MyBot, db: Database):
     all_chats = await db.chat.select_many()
@@ -304,7 +312,7 @@ async def renew(message: types.Message, bot: MyBot, db: Database):
     chats_member = ""
     for i in chats_admin:
         try:
-            res = await bot.get_chat_member_count(chat_id=i.chat_id)
+            res = await get_chat_member_count(bot, chat_id=i.chat_id)
             chats_member += f"{i.title}: {res}"
         except TelegramBadRequest:
             ...
