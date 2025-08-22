@@ -20,5 +20,5 @@ async def start(update: ChatMemberUpdated, db: Database):
         ))
         return
     await db.chat.update(chat_id=db_chat_info.chat_id, query=ChatUpdate(
-        permissions=permissions
+        permissions=permissions, title=update.chat.title
     ))
