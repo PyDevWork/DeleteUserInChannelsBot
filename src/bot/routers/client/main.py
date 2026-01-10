@@ -7,6 +7,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 
 from src.bot import keyboards
+from src.bot.common.filters.admin import IsAdmin
 from src.bot.common.middlewares.i18n import gettext as _
 from src.bot.common.states.main import Support
 from src.bot.core.models import MyBot
@@ -33,13 +34,13 @@ def split_message(text: str):
     return parts
 
 
-@client_router.message(CommandStart())
+@client_router.message(CommandStart(), IsAdmin())
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer(text=_(texts.START), reply_markup=keyboards.start())
 
 
-@client_router.message(Command("support"))
+@client_router.message(Command("support"), IsAdmin())
 async def support(message: types.Message, state: FSMContext):
     await state.set_state(Support.message)
     await message.reply(
@@ -48,7 +49,7 @@ async def support(message: types.Message, state: FSMContext):
     )
 
 
-@client_router.message(Support.message)
+@client_router.message(Support.message, IsAdmin())
 async def get_support_message(
     message: types.Message, state: FSMContext, settings: Settings, db: Database
 ):
@@ -72,7 +73,7 @@ async def get_support_message(
     await message.reply(_(texts.SUPPORT_YOUR_MESSAGE_SEND_ADMIN))
 
 
-@client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Start())
+@client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Start(), IsAdmin())
 async def start_cq(callback: types.CallbackQuery, db: Database):
     data = Cb.extract(callback.data)
 
@@ -94,7 +95,7 @@ async def start_cq(callback: types.CallbackQuery, db: Database):
             await callback.message.reply(i)
 
 
-@client_router.message(Command("kick"))
+@client_router.message(Command("kick"), IsAdmin())
 async def get_user_id_kick(message: types.Message, bot: MyBot, db: Database):
     try:
         user_id = int(message.text.split(" ")[1])
@@ -154,7 +155,7 @@ async def get_user_id_kick(message: types.Message, bot: MyBot, db: Database):
         )
 
 
-@client_router.message(Command("user"))
+@client_router.message(Command("user"), IsAdmin())
 async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
     try:
         user_id = int(message.text.split(" ")[1])
@@ -206,7 +207,7 @@ async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
         )
 
 
-@client_router.message(Command("chat_links"))
+@client_router.message(Command("chat_links"), IsAdmin())
 async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Database):
     try:
         expired_data = int(message.text.split(" ")[1])
@@ -265,7 +266,7 @@ async def get_chat_member_count(bot, chat_id):
         await asyncio.sleep(e.retry_after + 1)
         return await bot.get_chat_member_count(chat_id=chat_id)
 
-@client_router.message(Command("renew"))
+@client_router.message(Command("renew"), IsAdmin())
 async def renew(message: types.Message, bot: MyBot, db: Database):
     all_chats = await db.chat.select_many()
     chats_admin = [i for i in all_chats if i.permissions["status"] == "administrator"]
@@ -321,7 +322,7 @@ async def renew(message: types.Message, bot: MyBot, db: Database):
     #     f.write(chats_member)
 
 
-@client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Back())
+@client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Back(), IsAdmin())
 async def back(callback: types.CallbackQuery, state: FSMContext):
     data = Cb.extract(callback.data)
     if data.data == Cb.Back.main_menu():
