@@ -1,8 +1,9 @@
+import asyncio
 import datetime
 import random
 
 from aiogram import types
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 
@@ -18,8 +19,7 @@ from src.common.dto import QuestionCreate
 from src.common.dto.chat import ChatUpdate
 from src.config.settings import Settings
 from src.database.core import Database
-from aiogram.exceptions import TelegramRetryAfter
-import asyncio
+
 MAX_MESSAGE_LENGTH = 4096  # Лимит Telegram
 
 
@@ -73,7 +73,9 @@ async def get_support_message(
     await message.reply(_(texts.SUPPORT_YOUR_MESSAGE_SEND_ADMIN))
 
 
-@client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Start(), IsAdmin())
+@client_router.callback_query(
+    lambda c: Cb.extract(c.data, True).data == Cb.Start(), IsAdmin()
+)
 async def start_cq(callback: types.CallbackQuery, db: Database):
     data = Cb.extract(callback.data)
 
@@ -129,7 +131,7 @@ async def get_user_id_kick(message: types.Message, bot: MyBot, db: Database):
     for i in chats_admin:
         try:
             res = await bot.get_chat_member(chat_id=i.chat_id, user_id=user_id)
-            if res.status.name == "LEFT":
+            if res.status == "left":
                 errors.append((i.title, i.chat_id))
                 continue
             await bot.ban_chat_member(chat_id=i.chat_id, user_id=user_id)
@@ -150,9 +152,7 @@ async def get_user_id_kick(message: types.Message, bot: MyBot, db: Database):
     txt = _(texts.KICK_PROCESS_FINISH).format(text)
 
     for i in split_message(txt):
-        await mes.answer(
-            text=i, reply_markup=reply_markup
-        )
+        await mes.answer(text=i, reply_markup=reply_markup)
 
 
 @client_router.message(Command("user"), IsAdmin())
@@ -188,23 +188,20 @@ async def get_user_id_chats(message: types.Message, bot: MyBot, db: Database):
     for i in chats_admin:
         try:
             res = await bot.get_chat_member(chat_id=i.chat_id, user_id=user_id)
-            res.status.name
             smile = ""
-            if res.status.name == "LEFT":
+            if res.status == "left":
                 smile = "🚾"
-            elif res.status.name == "KICKED":
+            elif res.status == "kicked":
                 smile = "❌"
-            elif res.status.name == "MEMBER":
+            elif res.status == "member":
                 smile = "✅"
-            text += f"{smile} | {res.status.name} - {i.title} | {i.chat_id}\n"
+            text += f"{smile} | {res.status} - {i.title} | {i.chat_id}\n"
         except TelegramBadRequest:
             text += f"🚫 - {i.title} | {i.chat_id}\n"
 
     txt = _(texts.USER_PROCESS_FINISH).format(text)
     for i in split_message(txt):
-        await mes.answer(
-            text=i, reply_markup=reply_markup
-        )
+        await mes.answer(text=i, reply_markup=reply_markup)
 
 
 @client_router.message(Command("chat_links"), IsAdmin())
@@ -246,9 +243,8 @@ async def get_expired_data_chat_links(message: types.Message, bot: MyBot, db: Da
 
     txt = _(texts.CHAT_LINK_PROCESS_FINISH).format(text)
     for i in split_message(txt):
-        await message.answer(
-            text=i, reply_markup=reply_markup
-        )
+        await message.answer(text=i, reply_markup=reply_markup)
+
 
 async def get_chat(bot, chat_id):
     try:
@@ -258,6 +254,7 @@ async def get_chat(bot, chat_id):
         await asyncio.sleep(e.retry_after + 1)
         return await bot.get_chat(chat_id=chat_id)
 
+
 async def get_chat_member_count(bot, chat_id):
     try:
         return await bot.get_chat_member_count(chat_id=chat_id)
@@ -265,6 +262,7 @@ async def get_chat_member_count(bot, chat_id):
         print(f"Превышен лимит. Ждём {e.retry_after} секунд")
         await asyncio.sleep(e.retry_after + 1)
         return await bot.get_chat_member_count(chat_id=chat_id)
+
 
 @client_router.message(Command("renew"), IsAdmin())
 async def renew(message: types.Message, bot: MyBot, db: Database):
@@ -322,7 +320,9 @@ async def renew(message: types.Message, bot: MyBot, db: Database):
     #     f.write(chats_member)
 
 
-@client_router.callback_query(lambda c: Cb.extract(c.data, True).data == Cb.Back(), IsAdmin())
+@client_router.callback_query(
+    lambda c: Cb.extract(c.data, True).data == Cb.Back(), IsAdmin()
+)
 async def back(callback: types.CallbackQuery, state: FSMContext):
     data = Cb.extract(callback.data)
     if data.data == Cb.Back.main_menu():
